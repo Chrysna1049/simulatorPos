@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aino Payment Device Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .connection-bar {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #f45c43;
+        }
+
+        .status-dot.connected {
+            background: #38ef7d;
+        }
+
+        .status-dot.connecting {
+            background: #ffc107;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        button:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .log-area {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-left: 3px solid #667eea;
+            background: #2d2d2d;
+        }
+
+        .log-entry.send {
+            border-left-color: #4facfe;
+        }
+
+        .log-entry.receive {
+            border-left-color: #38ef7d;
+        }
+
+        .log-entry.error {
+            border-left-color: #f45c43;
+        }
+
+        .log-entry.warning {
+            border-left-color: #ffc107;
+        }
+
+        .hex-display {
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #4fc3f7;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .alert-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .serial-config {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .serial-config .config-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Aino Payment Device Protocol Tester</h1>
+            <p>Real Serial Communication Tool - 115200-8N1</p>
+        </div>
+
+        <div class="connection-bar">
+            <div class="connection-status">
+                <div class="status-dot disconnected" id="statusDot"></div>
+                <div>
+                    <strong id="statusText">Disconnected</strong>
+                    <div style="font-size: 12px; color: #666;" id="portInfo">No device connected</div>
+                </div>
+            </div>
+            <button class="btn-success" id="connectBtn" onclick="connectSerial()">Connect Device</button>
+            <button class="btn-danger" id="disconnectBtn" onclick="disconnectSerial()" disabled>Disconnect</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Panel Kiri: Command Input -->
+            <div class="panel">
+                <h2>📤 Command Sender</h2>
+                
+                <div class="alert-box" id="browserCheck">
+                    <strong>⚠️ Browser Compatibility:</strong> <span id="compatibilityMsg">Checking...</span>
+                </div>
+
+                <div class="serial-config">
+                    <h3 style="margin-bottom: 10px; font-size: 14px;">Serial Port Configuration</h3>
+                    <div class="config-row">
+                        <div>
+                            <label style="font-size: 12px;">Baud Rate</label>
+                            <input type="number" id="baudRate" value="115200" readonly>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px;">Data Bits</label>
+                            <input type="number" id="dataBits" value="8" readonly>
+                        </div>
+                    </div>
+                    <div class="config-row">
+                        <div>
+                            <label style="font-size: 12px;">Parity</label>
+                            <input type="text" id="parity" value="none" readonly>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px;">Stop Bits</label>
+                            <input type="number" id="stopBits" value="1" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>POS ID (5 chars)</label>
+                    <input type="text" id="posId" value="00001" maxlength="5">
+                </div>
+
+                <div class="form-group">
+                    <label>Shift ID (8 chars)</label>
+                    <input type="text" id="shiftId" value="20250123" maxlength="8">
+                </div>
+
+                <div class="form-group">
+                    <label>Select Command</label>
+                    <select id="commandSelect" onchange="updateCommandFields()">
+                        <option value="0x01">0x01 - New Debit Transaction</option>
+                        <option value="0x02">0x02 - Echo Test</option>
+                        <option value="0x03">0x03 - Get Last Transaction</option>
+                        <option value="0x04">0x04 - Check Balance</option>
+                        <option value="0x05">0x05 - Check CSN</option>
+                        <option value="0x06">0x06 - Cancel Transaction</option>
+                        <option value="0x07">0x07 - QRIS MPM Transaction</option>
+                        <option value="0x08">0x08 - Request QRIS MPM</option>
+                        <option value="0x09">0x09 - Check Payment Status MPM</option>
+                    </select>
+                </div>
+
+                <div id="dynamicFields"></div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="sendBtn" onclick="sendCommand()" disabled>Send Command</button>
+                    <button class="btn-warning" onclick="sendEchoTest()" id="echoBtn" disabled>Quick Echo</button>
+                    <button class="btn-info" onclick="clearLog()">Clear Log</button>
+                </div>
+            </div>
+
+            <!-- Panel Kanan: Response Display -->
+            <div class="panel">
+                <h2>📥 Device Response Monitor</h2>
+                
+                <div class="info-box">
+                    <strong>Response Timeout:</strong> 5 seconds<br>
+                    <strong>Auto-parse:</strong> Enabled
+                </div>
+
+                <div class="log-area" id="logArea"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let logCounter = 0;
+        let readBuffer = [];
+        let isReading = false;
+
+        // Check browser compatibility
+        function checkBrowserCompatibility() {
+            const compatMsg = document.getElementById('compatibilityMsg');
+            if ('serial' in navigator) {
+                compatMsg.innerHTML = '✓ Web Serial API supported';
+                compatMsg.parentElement.style.background = '#d4edda';
+                compatMsg.parentElement.style.borderLeftColor = '#28a745';
+                return true;
+            } else {
+                compatMsg.innerHTML = '✗ Web Serial API not supported. Please use Chrome, Edge, or Opera browser.';
+                compatMsg.parentElement.style.background = '#f8d7da';
+                compatMsg.parentElement.style.borderLeftColor = '#dc3545';
+                return false;
+            }
+        }
+
+        // LRC Checksum Calculator
+        function calculateLRC(dataBytes) {
+            let checksum = 0x00;
+            for (let byte of dataBytes) {
+                checksum ^= byte;
+            }
+            return checksum;
+        }
+
+        // Convert string to hex array
+        function stringToHex(str) {
+            let result = [];
+            for (let i = 0; i < str.length; i++) {
+                result.push(str.charCodeAt(i));
+            }
+            return result;
+        }
+
+        // Format hex for display
+        function formatHex(byteArray) {
+            return byteArray.map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+        }
+
+        // Generate transaction ID
+        function generateTransactionId() {
+            const timestamp = Date.now().toString();
+            return timestamp.padStart(20, '0').slice(0, 20);
+        }
+
+        // Generate timestamp
+        function generateTimestamp() {
+            const now = new Date();
+            const yy = now.getFullYear().toString().slice(2);
+            const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+            const dd = now.getDate().toString().padStart(2, '0');
+            const hh = now.getHours().toString().padStart(2, '0');
+            const min = now.getMinutes().toString().padStart(2, '0');
+            const ss = now.getSeconds().toString().padStart(2, '0');
+            return yy + mm + dd + hh + min + ss;
+        }
+
+        // Update command fields
+        function updateCommandFields() {
+            const cmd = document.getElementById('commandSelect').value;
+            const container = document.getElementById('dynamicFields');
+            container.innerHTML = '';
+
+            if (cmd === '0x01' || cmd === '0x07' || cmd === '0x08') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label>Transaction ID (20 chars)</label>
+                        <input type="text" id="transactionId" value="${generateTransactionId()}" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (Rp)</label>
+                        <input type="number" id="amount" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Timestamp (YYMMDDHHmmss)</label>
+                        <input type="text" id="timestamp" value="${generateTimestamp()}" maxlength="14">
+                    </div>
+                `;
+            } else if (cmd === '0x09') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label>Transaction ID (20 chars)</label>
+                        <input type="text" id="transactionId" value="${generateTransactionId()}" maxlength="20">
+                    </div>
+                `;
+            }
+        }
+
+        // Build command packet
+        function buildCommandPacket() {
+            const cmd = parseInt(document.getElementById('commandSelect').value);
+
+            let packet = [];
+            
+            // STX
+            packet.push(0x10, 0x02);
+            
+            // CMD
+            packet.push(cmd);
+
+            // Check if this is a simple command (0x05 or 0x06 - no POS_ID/SHIFT_ID)
+            if (cmd === 0x05 || cmd === 0x06) {
+                // ETX immediately after CMD
+                packet.push(0x10, 0x03);
+                return packet;
+            }
+
+            // For other commands, add POS_ID and SHIFT_ID
+            const posId = document.getElementById('posId').value.padEnd(5, '0');
+            const shiftId = document.getElementById('shiftId').value.padEnd(8, '0');
+            
+            // POS_ID
+            packet.push(...stringToHex(posId));
+            
+            // SHIFT_ID
+            packet.push(...stringToHex(shiftId));
+
+            // Variable data
+            let variableData = [];
+            
+            if (cmd === 0x01 || cmd === 0x07 || cmd === 0x08) {
+                const transId = document.getElementById('transactionId').value.padEnd(20, '0');
+                const amount = parseInt(document.getElementById('amount').value).toString().padStart(8, '0');
+                const timestamp = document.getElementById('timestamp').value.padEnd(14, '0');
+                
+                variableData.push(...stringToHex(transId));
+                variableData.push(...stringToHex(amount));
+                variableData.push(...stringToHex(timestamp));
+            } else if (cmd === 0x09) {
+                const transId = document.getElementById('transactionId').value.padEnd(20, '0');
+                variableData.push(...stringToHex(transId));
+            }
+
+            // DATA_LENGTH (big endian)
+            const dataLen = variableData.length;
+            packet.push((dataLen >> 8) & 0xFF, dataLen & 0xFF);
+            
+            // Add variable data
+            packet.push(...variableData);
+
+            // Calculate checksum (from CMD to end of variable data)
+            const checksumData = packet.slice(2); // Skip STX
+            const checksum = calculateLRC(checksumData);
+            packet.push(checksum);
+
+            // ETX
+            packet.push(0x10, 0x03);
+
+            return packet;
+        }
+
+        // Log message
+        function addLog(message, type = 'info', hexData = null) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logCounter++;
+
+            let logEntry = `
+                <div class="log-entry ${type}">
+                    <strong>[${logCounter}] ${timestamp} - ${type.toUpperCase()}</strong><br>
+                    ${message}
+                    ${hexData ? `<div class="hex-display">${hexData}</div>` : ''}
+                </div>
+            `;
+
+            logArea.innerHTML += logEntry;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Clear log
+        function clearLog() {
+            document.getElementById('logArea').innerHTML = '';
+            logCounter = 0;
+            addLog('Log cleared. Ready for testing.', 'info');
+        }
+
+        // Connect to serial port
+        async function connectSerial() {
+            try {
+                if (!('serial' in navigator)) {
+                    addLog('Web Serial API not supported in this browser', 'error');
+                    alert('Please use Chrome, Edge, or Opera browser with HTTPS or localhost');
+                    return;
+                }
+
+                addLog('Requesting serial port access...', 'info');
+                
+                // Request port
+                port = await navigator.serial.requestPort();
+                
+                // Open port with specified configuration
+                await port.open({
+                    baudRate: 115200,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+
+                addLog('Serial port opened successfully!', 'receive');
+                addLog(`Configuration: 115200-8N1`, 'info');
+
+                // Update UI
+                document.getElementById('statusDot').className = 'status-dot connected';
+                document.getElementById('statusText').textContent = 'Connected';
+                document.getElementById('portInfo').textContent = 'Device ready';
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('echoBtn').disabled = false;
+
+                // Setup reader and writer
+                writer = port.writable.getWriter();
+                
+                // Start reading in background
+                startReading();
+
+            } catch (error) {
+                addLog(`Connection failed: ${error.message}`, 'error');
+                console.error('Serial connection error:', error);
+            }
+        }
+
+        // Start reading from serial port
+        async function startReading() {
+            if (isReading) return;
+            isReading = true;
+
+            try {
+                reader = port.readable.getReader();
+                
+                while (isReading && port.readable) {
+                    try {
+                        const { value, done } = await reader.read();
+                        
+                        if (done) {
+                            break;
+                        }
+                        
+                        if (value) {
+                            handleReceivedData(value);
+                        }
+                    } catch (error) {
+                        addLog(`Read error: ${error.message}`, 'error');
+                        break;
+                    }
+                }
+            } catch (error) {
+                addLog(`Reader error: ${error.message}`, 'error');
+            } finally {
+                if (reader) {
+                    reader.releaseLock();
+                    reader = null;
+                }
+            }
+        }
+
+        // Handle received data
+        function handleReceivedData(data) {
+            const bytes = Array.from(data);
+            readBuffer.push(...bytes);
+
+            // Check for complete packet (STX...ETX)
+            const stxIndex = readBuffer.findIndex((b, i) => 
+                i < readBuffer.length - 1 && b === 0x10 && readBuffer[i + 1] === 0x02
+            );
+            
+            const etxIndex = readBuffer.findIndex((b, i) => 
+                i < readBuffer.length - 1 && b === 0x10 && readBuffer[i + 1] === 0x03
+            );
+
+            if (stxIndex !== -1 && etxIndex !== -1 && etxIndex > stxIndex) {
+                const packet = readBuffer.slice(stxIndex, etxIndex + 2);
+                readBuffer = readBuffer.slice(etxIndex + 2);
+                
+                parseResponse(packet);
+            }
+
+            // Prevent buffer overflow
+            if (readBuffer.length > 1000) {
+                readBuffer = readBuffer.slice(-500);
+            }
+        }
+
+        // Parse response packet
+        function parseResponse(packet) {
+            try {
+                const hexString = formatHex(packet);
+                addLog('Received response from device', 'receive', hexString);
+
+                if (packet.length < 5) {
+                    addLog('Invalid packet length', 'warning');
+                    return;
+                }
+
+                // Verify STX and ETX
+                if (packet[0] !== 0x10 || packet[1] !== 0x02) {
+                    addLog('⚠ Invalid STX header', 'warning');
+                }
+                if (packet[packet.length - 2] !== 0x10 || packet[packet.length - 1] !== 0x03) {
+                    addLog('⚠ Invalid ETX footer', 'warning');
+                }
+
+                const cmd = packet[2];
+                const resp = packet[3];
+                
+                const cmdNames = {
+                    0x01: 'New Debit Transaction',
+                    0x02: 'Echo Test',
+                    0x03: 'Get Last Transaction',
+                    0x04: 'Check Balance',
+                    0x05: 'Check CSN',
+                    0x06: 'Cancel Transaction',
+                    0x07: 'QRIS MPM Transaction',
+                    0x08: 'Request QRIS MPM',
+                    0x09: 'Check Payment Status MPM'
+                };
+
+                const respNames = {
+                    0x00: 'SUCCESS',
+                    0x01: 'FAILED - General Error',
+                    0x02: 'FAILED - Lost Contact',
+                    0x03: 'FAILED - Not Enough Balance',
+                    0x04: 'FAILED - Request Timeout',
+                    0x05: 'FAILED - Card Expired',
+                    0x06: 'FAILED - Card Not Active',
+                    0x07: 'FAILED - Same Transaction ID',
+                    0x08: 'FAILED - Mandiri Transaction < 10s',
+                    0x09: 'FAILED - BNI Expired Card',
+                    0x98: 'ERROR - Checksum Error',
+                    0x99: 'ERROR - Undefined Error'
+                };
+
+                const cmdName = cmdNames[cmd] || `Unknown Command (0x${cmd.toString(16).toUpperCase()})`;
+                const respName = respNames[resp] || `Unknown Response (0x${resp.toString(16).toUpperCase()})`;
+
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'receive');
+                addLog(`<strong>Command:</strong> ${cmdName} (0x${cmd.toString(16).toUpperCase()})`, resp === 0x00 ? 'receive' : 'error');
+                addLog(`<strong>Response:</strong> ${respName}`, resp === 0x00 ? 'receive' : 'error');
+
+                // Check if this is a simple response (0x05 or 0x06)
+                if (cmd === 0x05 || cmd === 0x06) {
+                    // Simple response format: STX CMD RESP [DATA] ETX
+                    // No POS_ID, SHIFT_ID, or DATA_LENGTH
+                    if (resp === 0x00) {
+                        parseSimpleSuccessResponse(cmd, packet);
+                    } else {
+                        parseErrorResponse(cmd, resp);
+                    }
+                } else {
+                    // Standard response format with POS_ID, SHIFT_ID, DATA_LENGTH
+                    if (packet.length < 19) {
+                        addLog('Packet too short for standard response format', 'warning');
+                        return;
+                    }
+
+                    const posId = String.fromCharCode(...packet.slice(4, 9));
+                    const shiftId = String.fromCharCode(...packet.slice(9, 17));
+                    
+                    addLog(`<strong>POS ID:</strong> ${posId} | <strong>Shift ID:</strong> ${shiftId}`, 'info');
+
+                    // Get data length
+                    const dataLen = (packet[17] << 8) | packet[18];
+                    addLog(`<strong>Data Length:</strong> ${dataLen} bytes`, 'info');
+
+                    // Verify checksum
+                    const receivedChecksum = packet[packet.length - 3];
+                    const checksumData = packet.slice(2, packet.length - 3);
+                    const calculatedChecksum = calculateLRC(checksumData);
+                    
+                    if (receivedChecksum === calculatedChecksum) {
+                        addLog(`✓ Checksum valid: 0x${receivedChecksum.toString(16).toUpperCase()}`, 'receive');
+                    } else {
+                        addLog(`✗ Checksum mismatch! Received: 0x${receivedChecksum.toString(16).toUpperCase()}, Calculated: 0x${calculatedChecksum.toString(16).toUpperCase()}`, 'error');
+                    }
+
+                    // Parse specific responses based on command
+                    if (resp === 0x00 && packet.length >= 19 + dataLen) {
+                        parseSuccessResponse(cmd, packet, dataLen);
+                    } else if (resp !== 0x00) {
+                        parseErrorResponse(cmd, resp);
+                    }
+                }
+
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'receive');
+
+            } catch (error) {
+                addLog(`Parse error: ${error.message}`, 'error');
+                console.error('Parse error details:', error);
+            }
+        }
+
+        // Parse simple success response (for 0x05 and 0x06)
+        function parseSimpleSuccessResponse(cmd, packet) {
+            try {
+                // Format: STX CMD RESP [DATA] ETX
+                const dataStart = 4; // After STX, CMD, RESP
+                const dataEnd = packet.length - 2; // Before ETX
+                const dataLen = dataEnd - dataStart;
+                
+                if (cmd === 0x05) { // Check CSN
+                    if (dataLen >= 4) { // Minimal: 1 byte CSN + 3 bytes issuer
+                        // Ambil semua data kecuali 3 byte terakhir sebagai CSN
+                        const csnLen = dataLen - 3;
+                        const csn = String.fromCharCode(...packet.slice(dataStart, dataStart + csnLen));
+                        
+                        // Ambil 3 byte terakhir sebagai issuer
+                        const issuer = String.fromCharCode(...packet.slice(dataStart + csnLen, dataStart + csnLen + 3));
+                        
+                        addLog(`<strong>🔖 Card Serial Number:</strong>`, 'receive');
+                        addLog(`  CSN: ${csn} (${csnLen} bytes)`, 'receive');
+                        addLog(`  Issuer: ${issuer}`, 'receive');
+                    } else {
+                        addLog(`⚠ Insufficient data for CSN response (expected min 4 bytes, got ${dataLen})`, 'warning');
+                    }
+                } else if (cmd === 0x06) { // Cancel Transaction
+                    addLog(`<strong>✓ Transaction Cancelled Successfully</strong>`, 'receive');
+                }
+            } catch (error) {
+                addLog(`Error parsing simple response: ${error.message}`, 'error');
+            }
+        }
+
+        // Parse success response data
+        function parseSuccessResponse(cmd, packet, dataLen) {
+            try {
+                const dataStart = 19;
+                
+                switch(cmd) {
+                    case 0x01: // New Debit Transaction
+                        if (dataLen >= 77) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 42));
+                            const pan = String.fromCharCode(...packet.slice(dataStart + 42, dataStart + 58));
+                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + 58, dataStart + 66));
+                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + 66, dataStart + 74));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + 74, dataStart + 77));
+                            
+                            const txDataLen = dataLen - 77;
+                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + 77, dataStart + 77 + txDataLen)) : '';
+
+                            addLog(`<strong>📊 Transaction Details:</strong>`, 'receive');
+                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
+                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
+                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
+                            addLog(`  PAN: ${pan}`, 'receive');
+                            addLog(`  Balance Before: Rp ${parseInt(balanceBefore).toLocaleString()}`, 'receive');
+                            addLog(`  Balance After: Rp ${parseInt(balanceAfter).toLocaleString()}`, 'receive');
+                            addLog(`  Deducted: Rp ${(parseInt(balanceBefore) - parseInt(balanceAfter)).toLocaleString()}`, 'receive');
+                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            if (txData) {
+                                addLog(`  Transaction Data Length: ${txDataLen} bytes`, 'info');
+                            }
+                        }
+                        break;
+
+                    case 0x02: // Echo Test
+                        if (dataLen >= 5) {
+                            const appVer = String.fromCharCode(...packet.slice(dataStart, dataStart + 2));
+                            const svnVer = String.fromCharCode(...packet.slice(dataStart + 2, dataStart + 5));
+                            addLog(`<strong>🔌 Device Information:</strong>`, 'receive');
+                            addLog(`  Application Version: ${appVer}`, 'receive');
+                            addLog(`  SVN Build: ${svnVer}`, 'receive');
+                            addLog(`  ✓ Device is ready and responding`, 'receive');
+                        }
+                        break;
+
+                    case 0x03: // Get Last Transaction
+                        if (dataLen >= 77) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 42));
+                            const pan = String.fromCharCode(...packet.slice(dataStart + 42, dataStart + 58));
+                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + 58, dataStart + 66));
+                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + 66, dataStart + 74));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + 74, dataStart + 77));
+                            
+                            const txDataLen = dataLen - 77;
+                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + 77, dataStart + 77 + txDataLen)) : '';
+
+                            addLog(`<strong>📜 Last Transaction Retrieved:</strong>`, 'receive');
+                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
+                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
+                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
+                            addLog(`  PAN: ${pan}`, 'receive');
+                            addLog(`  Balance Before: Rp ${parseInt(balanceBefore).toLocaleString()}`, 'receive');
+                            addLog(`  Balance After: Rp ${parseInt(balanceAfter).toLocaleString()}`, 'receive');
+                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            if (txData) {
+                                addLog(`  Transaction Data: ${txDataLen} bytes encrypted data`, 'info');
+                            }
+                        }
+                        break;
+
+                    case 0x04: // Check Balance
+                        if (dataLen >= 27) {
+                            const pan = String.fromCharCode(...packet.slice(dataStart, dataStart + 16));
+                            const balance = String.fromCharCode(...packet.slice(dataStart + 16, dataStart + 24));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + 24, dataStart + 27));
+                            
+                            addLog(`<strong>💳 Card Balance Information:</strong>`, 'receive');
+                            addLog(`  PAN: ${pan}`, 'receive');
+                            addLog(`  Balance: Rp ${parseInt(balance).toLocaleString()}`, 'receive');
+                            addLog(`  Issuer: ${issuer}`, 'receive');
+                        }
+                        break;
+
+                    case 0x05: // Check CSN
+                        // This case is now handled in parseSimpleSuccessResponse
+                        break;
+
+                    case 0x06: // Cancel Transaction
+                        // This case is now handled in parseSimpleSuccessResponse
+                        break;
+
+                    case 0x07: // QRIS MPM Transaction
+                        if (dataLen >= 65) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 31));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 31, dataStart + 45));
+                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + 45, dataStart + 65));
+                            
+                            addLog(`<strong>📱 QRIS MPM Payment Success:</strong>`, 'receive');
+                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
+                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
+                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
+                            addLog(`  PG Reference: ${pgRefNum}`, 'receive');
+                        }
+                        break;
+
+                    case 0x08: // Request QRIS MPM
+                        if (dataLen >= 42) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 42));
+                            
+                            const qrisDataLen = dataLen - 42;
+                            const qrisData = qrisDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + 42, dataStart + 42 + qrisDataLen)) : '';
+                            
+                            addLog(`<strong>📱 QRIS MPM Generated:</strong>`, 'receive');
+                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
+                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
+                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
+                            if (qrisData) {
+                                addLog(`  <strong>QRIS Data (${qrisDataLen} chars):</strong>`, 'receive');
+                                addLog(`  ${qrisData.substring(0, 100)}${qrisData.length > 100 ? '...' : ''}`, 'info');
+                                addLog(`  ✓ Use this data to generate QR code on POS`, 'receive');
+                            }
+                        }
+                        break;
+
+                    case 0x09: // Check Payment Status MPM
+                        if (dataLen >= 65) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 31));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 31, dataStart + 45));
+                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + 45, dataStart + 65));
+                            
+                            addLog(`<strong>✅ QRIS Payment Confirmed:</strong>`, 'receive');
+                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
+                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
+                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
+                            addLog(`  PG Reference: ${pgRefNum}`, 'receive');
+                        }
+                        break;
+                }
+            } catch (error) {
+                addLog(`Error parsing success response: ${error.message}`, 'error');
+            }
+        }
+
+        // Parse error response
+        function parseErrorResponse(cmd, respCode) {
+            const errorMessages = {
+                0x01: {
+                    msg: 'Transaction failed - General error',
+                    action: 'Retry the transaction or contact support'
+                },
+                0x02: {
+                    msg: 'Card contact lost during transaction',
+                    action: 'Ask customer to tap card again or use Get Last Transaction to verify'
+                },
+                0x03: {
+                    msg: 'Insufficient card balance',
+                    action: 'Inform customer or offer alternative payment (QRIS MPM)'
+                },
+                0x04: {
+                    msg: 'Request timeout - No card detected',
+                    action: 'Retry or cancel transaction'
+                },
+                0x05: {
+                    msg: 'Card has expired',
+                    action: 'Reject card and inform customer'
+                },
+                0x06: {
+                    msg: 'Card is not active or blocked',
+                    action: 'Reject card and inform customer'
+                },
+                0x07: {
+                    msg: 'Duplicate transaction ID detected',
+                    action: 'Generate new transaction ID and retry'
+                },
+                0x08: {
+                    msg: 'Mandiri card - Transaction too fast (<10s)',
+                    action: 'Wait 10 seconds before retry'
+                },
+                0x09: {
+                    msg: 'BNI card has expired',
+                    action: 'Reject card and inform customer'
+                },
+                0x98: {
+                    msg: 'Checksum error in command',
+                    action: 'Resend the command'
+                },
+                0x99: {
+                    msg: 'Undefined error occurred',
+                    action: 'Log error details and contact support'
+                }
+            };
+
+            const errorInfo = errorMessages[respCode] || {
+                msg: 'Unknown error',
+                action: 'Check device status and retry'
+            };
+
+            addLog(`<strong>⚠️ Error Details:</strong>`, 'error');
+            addLog(`  ${errorInfo.msg}`, 'error');
+            addLog(`  <strong>Recommended Action:</strong> ${errorInfo.action}`, 'warning');
+        }
+
+        // Format timestamp from YYMMDDHHmmss to readable format
+        function formatTimestamp(ts) {
+            if (ts.length !== 14) return ts;
+            
+            const year = '20' + ts.substring(0, 2);
+            const month = ts.substring(2, 4);
+            const day = ts.substring(4, 6);
+            const hour = ts.substring(6, 8);
+            const minute = ts.substring(8, 10);
+            const second = ts.substring(10, 12);
+            
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthName = monthNames[parseInt(month) - 1] || month;
+            
+            return `${day} ${monthName} ${year} ${hour}:${minute}:${second}`;
+        }
+
+        // Disconnect serial port
+        async function disconnectSerial() {
+            try {
+                isReading = false;
+
+                if (reader) {
+                    await reader.cancel();
+                    reader.releaseLock();
+                    reader = null;
+                }
+
+                if (writer) {
+                    writer.releaseLock();
+                    writer = null;
+                }
+
+                if (port) {
+                    await port.close();
+                    port = null;
+                }
+
+                addLog('Serial port disconnected', 'warning');
+
+                // Update UI
+                document.getElementById('statusDot').className = 'status-dot disconnected';
+                document.getElementById('statusText').textContent = 'Disconnected';
+                document.getElementById('portInfo').textContent = 'No device connected';
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('echoBtn').disabled = true;
+
+            } catch (error) {
+                addLog(`Disconnect error: ${error.message}`, 'error');
+            }
+        }
+
+        // Send command to device
+        async function sendCommand() {
+            if (!writer) {
+                addLog('Not connected to device', 'error');
+                return;
+            }
+
+            try {
+                const packet = buildCommandPacket();
+                const hexString = formatHex(packet);
+                const cmdName = document.getElementById('commandSelect').options[document.getElementById('commandSelect').selectedIndex].text;
+                
+                addLog(`Sending: ${cmdName}`, 'send', hexString);
+                addLog(`Packet size: ${packet.length} bytes, Checksum: 0x${packet[packet.length - 3].toString(16).toUpperCase()}`, 'send');
+
+                const uint8Array = new Uint8Array(packet);
+                await writer.write(uint8Array);
+
+                addLog('✓ Command sent successfully', 'send');
+
+            } catch (error) {
+                addLog(`Send error: ${error.message}`, 'error');
+            }
+        }
+
+        // Quick echo test
+        async function sendEchoTest() {
+            document.getElementById('commandSelect').value = '0x02';
+            updateCommandFields();
+            await sendCommand();
+        }
+
+        // Initialize
+        window.onload = function() {
+            checkBrowserCompatibility();
+            updateCommandFields();
+            addLog('Aino Payment Device Tester initialized', 'info');
+            addLog('Click "Connect Device" to start', 'info');
+        };
+
+        // Handle page unload
+        window.addEventListener('beforeunload', async () => {
+            if (port) {
+                await disconnectSerial();
+            }
+        });
+    </script>
+</body>
+</html>
