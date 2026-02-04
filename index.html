@@ -435,7 +435,7 @@
             const hh = now.getHours().toString().padStart(2, '0');
             const min = now.getMinutes().toString().padStart(2, '0');
             const ss = now.getSeconds().toString().padStart(2, '0');
-                
+
             return dd + mm + yyyy + hh + min + ss;
         }
 
@@ -457,7 +457,7 @@
                         <input type="number" id="amount" value="1" min="1">
                     </div>
                     <div class="form-group">
-                        <label>Timestamp (YYMMDDHHmmss)</label>
+                        <label>Timestamp (DDMMYYYYHHmmss)</label>
                         <input type="text" id="timestamp" value="${generateTimestamp()}" maxlength="14">
                     </div>
                 `;
@@ -1019,21 +1019,37 @@
         }
 
         // Format timestamp from YYMMDDHHmmss to readable format
+        // function formatTimestamp(ts) {
+        //     if (ts.length !== 14) return ts;
+            
+        //     const year = '20' + ts.substring(0, 2);
+        //     const month = ts.substring(2, 4);
+        //     const day = ts.substring(4, 6);
+        //     const hour = ts.substring(6, 8);
+        //     const minute = ts.substring(8, 10);
+        //     const second = ts.substring(10, 12);
+            
+        //     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        //     const monthName = monthNames[parseInt(month) - 1] || month;
+            
+        //     return `${day} ${monthName} ${year} ${hour}:${minute}:${second}`;
+        // }
         function formatTimestamp(ts) {
             if (ts.length !== 14) return ts;
-            
-            const year = '20' + ts.substring(0, 2);
+
+            const day   = ts.substring(0, 2);
             const month = ts.substring(2, 4);
-            const day = ts.substring(4, 6);
-            const hour = ts.substring(6, 8);
-            const minute = ts.substring(8, 10);
-            const second = ts.substring(10, 12);
-            
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const monthName = monthNames[parseInt(month) - 1] || month;
-            
+            const year  = ts.substring(4, 8);
+            const hour  = ts.substring(8, 10);
+            const minute= ts.substring(10, 12);
+            const second= ts.substring(12, 14);
+
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const monthName = monthNames[parseInt(month, 10) - 1] || month;
+
             return `${day} ${monthName} ${year} ${hour}:${minute}:${second}`;
         }
+
 
         // Disconnect serial port
         async function disconnectSerial() {
