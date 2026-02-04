@@ -1190,6 +1190,12 @@
             }
 
             try {
+                // Update timestamp field with current time
+                const timestampField = document.getElementById('timestamp');
+                if (timestampField) {
+                    timestampField.value = generateTimestamp();
+                }
+                
                 const packet = buildCommandPacket();
                 const hexString = formatHex(packet);
                 const cmdName = document.getElementById('commandSelect').options[document.getElementById('commandSelect').selectedIndex].text;
