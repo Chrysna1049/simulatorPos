@@ -316,12 +316,28 @@
                 </div>
 
                 <div class="form-group">
-                    <label>POS ID (5 chars)</label>
+                    <label>POS ID Length</label>
+                    <select id="posIdLength" onchange="updatePosIdDisplay()">
+                        <option value="2">2 Characters</option>
+                        <option value="5" selected>5 Characters</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label id="posIdLabel">POS ID (5 chars)</label>
                     <input type="text" id="posId" value="00001" maxlength="5">
                 </div>
 
                 <div class="form-group">
-                    <label>Shift ID (8 chars)</label>
+                    <label>Shift ID Length</label>
+                    <select id="shiftIdLength" onchange="updateShiftIdDisplay()">
+                        <option value="1">1 Character</option>
+                        <option value="8" selected>8 Characters</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label id="shiftIdLabel">Shift ID (8 chars)</label>
                     <input type="text" id="shiftId" value="20250123" maxlength="8">
                 </div>
 
@@ -384,6 +400,36 @@
                 compatMsg.parentElement.style.background = '#f8d7da';
                 compatMsg.parentElement.style.borderLeftColor = '#dc3545';
                 return false;
+            }
+        }
+
+        // Update POS ID display based on selected length
+        function updatePosIdDisplay() {
+            const length = document.getElementById('posIdLength').value;
+            const label = document.getElementById('posIdLabel');
+            const input = document.getElementById('posId');
+            
+            label.textContent = `POS ID (${length} chars)`;
+            input.maxLength = length;
+            
+            // Adjust value if needed
+            if (input.value.length > length) {
+                input.value = input.value.substring(0, length);
+            }
+        }
+
+        // Update Shift ID display based on selected length
+        function updateShiftIdDisplay() {
+            const length = document.getElementById('shiftIdLength').value;
+            const label = document.getElementById('shiftIdLabel');
+            const input = document.getElementById('shiftId');
+            
+            label.textContent = `Shift ID (${length} chars)`;
+            input.maxLength = length;
+            
+            // Adjust value if needed
+            if (input.value.length > length) {
+                input.value = input.value.substring(0, length);
             }
         }
 
@@ -490,9 +536,13 @@
                 return packet;
             }
 
-            // For other commands, add POS_ID and SHIFT_ID
-            const posId = document.getElementById('posId').value.padEnd(5, '0');
-            const shiftId = document.getElementById('shiftId').value.padEnd(8, '0');
+            // Get selected lengths
+            const posIdLength = parseInt(document.getElementById('posIdLength').value);
+            const shiftIdLength = parseInt(document.getElementById('shiftIdLength').value);
+
+            // For other commands, add POS_ID and SHIFT_ID with selected lengths
+            const posId = document.getElementById('posId').value.padEnd(posIdLength, '0').substring(0, posIdLength);
+            const shiftId = document.getElementById('shiftId').value.padEnd(shiftIdLength, '0').substring(0, shiftIdLength);
             
             // POS_ID
             packet.push(...stringToHex(posId));
@@ -734,18 +784,30 @@
                     }
                 } else {
                     // Standard response format with POS_ID, SHIFT_ID, DATA_LENGTH
-                    if (packet.length < 19) {
-                        addLog('Packet too short for standard response format', 'warning');
+                    // Calculate positions based on selected lengths
+                    const posIdLength = parseInt(document.getElementById('posIdLength').value);
+                    const shiftIdLength = parseInt(document.getElementById('shiftIdLength').value);
+                    
+                    const posIdStart = 4;
+                    const posIdEnd = posIdStart + posIdLength;
+                    const shiftIdStart = posIdEnd;
+                    const shiftIdEnd = shiftIdStart + shiftIdLength;
+                    const dataLengthStart = shiftIdEnd;
+                    
+                    const minLength = dataLengthStart + 2; // +2 for data length bytes
+                    
+                    if (packet.length < minLength) {
+                        addLog(`Packet too short for standard response format (expected min ${minLength} bytes, got ${packet.length})`, 'warning');
                         return;
                     }
 
-                    const posId = String.fromCharCode(...packet.slice(4, 9));
-                    const shiftId = String.fromCharCode(...packet.slice(9, 17));
+                    const posId = String.fromCharCode(...packet.slice(posIdStart, posIdEnd));
+                    const shiftId = String.fromCharCode(...packet.slice(shiftIdStart, shiftIdEnd));
                     
                     addLog(`<strong>POS ID:</strong> ${posId} | <strong>Shift ID:</strong> ${shiftId}`, 'info');
 
                     // Get data length
-                    const dataLen = (packet[17] << 8) | packet[18];
+                    const dataLen = (packet[dataLengthStart] << 8) | packet[dataLengthStart + 1];
                     addLog(`<strong>Data Length:</strong> ${dataLen} bytes`, 'info');
 
                     // Verify checksum
@@ -760,8 +822,8 @@
                     }
 
                     // Parse specific responses based on command
-                    if (resp === 0x00 && packet.length >= 19 + dataLen) {
-                        parseSuccessResponse(cmd, packet, dataLen);
+                    if (resp === 0x00 && packet.length >= minLength + dataLen) {
+                        parseSuccessResponse(cmd, packet, dataLen, dataLengthStart + 2);
                     } else if (resp !== 0x00) {
                         parseErrorResponse(cmd, resp);
                     }
@@ -807,9 +869,9 @@
         }
 
         // Parse success response data
-        function parseSuccessResponse(cmd, packet, dataLen) {
+        function parseSuccessResponse(cmd, packet, dataLen, dataStartPos = 19) {
             try {
-                const dataStart = 19;
+                const dataStart = dataStartPos;
                 
                 switch(cmd) {
                     case 0x01: // New Debit Transaction
