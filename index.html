@@ -342,6 +342,14 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Transaction ID Length</label>
+                    <select id="transactionIdLength" onchange="updateTransactionIdDisplay()">
+                        <option value="11">11 Characters</option>
+                        <option value="20" selected>20 Characters</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label>Select Command</label>
                     <select id="commandSelect" onchange="updateCommandFields()">
                         <option value="0x01">0x01 - New Debit Transaction</option>
@@ -433,6 +441,25 @@
             }
         }
 
+        // Update Transaction ID display based on selected length
+        function updateTransactionIdDisplay() {
+            const length = document.getElementById('transactionIdLength').value;
+            const input = document.getElementById('transactionId');
+            
+            if (input) {
+                const label = input.previousElementSibling;
+                if (label) {
+                    label.textContent = `Transaction ID (${length} chars)`;
+                }
+                input.maxLength = length;
+                
+                // Adjust value if needed
+                if (input.value.length > length) {
+                    input.value = input.value.substring(0, length);
+                }
+            }
+        }
+
         // LRC Checksum Calculator
         function calculateLRC(dataBytes) {
             let checksum = 0x00;
@@ -491,12 +518,14 @@
             const cmd = document.getElementById('commandSelect').value;
             const container = document.getElementById('dynamicFields');
             container.innerHTML = '';
+            
+            const transIdLength = document.getElementById('transactionIdLength').value;
 
             if (cmd === '0x01' || cmd === '0x07' || cmd === '0x08') {
                 container.innerHTML = `
                     <div class="form-group">
-                        <label>Transaction ID (20 chars)</label>
-                        <input type="text" id="transactionId" value="${generateTransactionId()}" maxlength="20">
+                        <label>Transaction ID (${transIdLength} chars)</label>
+                        <input type="text" id="transactionId" value="${generateTransactionId().substring(0, transIdLength)}" maxlength="${transIdLength}">
                     </div>
                     <div class="form-group">
                         <label>Amount (Rp)</label>
@@ -510,8 +539,8 @@
             } else if (cmd === '0x09') {
                 container.innerHTML = `
                     <div class="form-group">
-                        <label>Transaction ID (20 chars)</label>
-                        <input type="text" id="transactionId" value="${generateTransactionId()}" maxlength="20">
+                        <label>Transaction ID (${transIdLength} chars)</label>
+                        <input type="text" id="transactionId" value="${generateTransactionId().substring(0, transIdLength)}" maxlength="${transIdLength}">
                     </div>
                 `;
             }
@@ -553,8 +582,10 @@
             // Variable data
             let variableData = [];
             
+            const transIdLength = parseInt(document.getElementById('transactionIdLength').value);
+            
             if (cmd === 0x01 || cmd === 0x07 || cmd === 0x08) {
-                const transId = document.getElementById('transactionId').value.padEnd(20, '0');
+                const transId = document.getElementById('transactionId').value.padEnd(transIdLength, '0').substring(0, transIdLength);
                 const amount = parseInt(document.getElementById('amount').value).toString().padStart(8, '0');
                 const timestamp = document.getElementById('timestamp').value.padEnd(14, '0');
                 
@@ -562,7 +593,7 @@
                 variableData.push(...stringToHex(amount));
                 variableData.push(...stringToHex(timestamp));
             } else if (cmd === 0x09) {
-                const transId = document.getElementById('transactionId').value.padEnd(20, '0');
+                const transId = document.getElementById('transactionId').value.padEnd(transIdLength, '0').substring(0, transIdLength);
                 variableData.push(...stringToHex(transId));
             }
 
@@ -823,7 +854,8 @@
 
                     // Parse specific responses based on command
                     if (resp === 0x00 && packet.length >= minLength + dataLen) {
-                        parseSuccessResponse(cmd, packet, dataLen, dataLengthStart + 2);
+                        const transIdLength = parseInt(document.getElementById('transactionIdLength').value);
+                        parseSuccessResponse(cmd, packet, dataLen, dataLengthStart + 2, transIdLength);
                     } else if (resp !== 0x00) {
                         parseErrorResponse(cmd, resp);
                     }
@@ -869,23 +901,23 @@
         }
 
         // Parse success response data
-        function parseSuccessResponse(cmd, packet, dataLen, dataStartPos = 19) {
+        function parseSuccessResponse(cmd, packet, dataLen, dataStartPos = 19, transactionIdLength = 20) {
             try {
                 const dataStart = dataStartPos;
                 
                 switch(cmd) {
                     case 0x01: // New Debit Transaction
-                        if (dataLen >= 77) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 42));
-                            const pan = String.fromCharCode(...packet.slice(dataStart + 42, dataStart + 58));
-                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + 58, dataStart + 66));
-                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + 66, dataStart + 74));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + 74, dataStart + 77));
+                        if (dataLen >= 57 + transactionIdLength) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22));
+                            const pan = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 38));
+                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 38, dataStart + transactionIdLength + 46));
+                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 46, dataStart + transactionIdLength + 54));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 54, dataStart + transactionIdLength + 57));
                             
-                            const txDataLen = dataLen - 77;
-                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + 77, dataStart + 77 + txDataLen)) : '';
+                            const txDataLen = dataLen - (57 + transactionIdLength);
+                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen)) : '';
 
                             addLog(`<strong>📊 Transaction Details:</strong>`, 'receive');
                             addLog(`  Transaction ID: ${transactionId}`, 'receive');
@@ -914,17 +946,17 @@
                         break;
 
                     case 0x03: // Get Last Transaction
-                        if (dataLen >= 77) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 42));
-                            const pan = String.fromCharCode(...packet.slice(dataStart + 42, dataStart + 58));
-                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + 58, dataStart + 66));
-                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + 66, dataStart + 74));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + 74, dataStart + 77));
+                        if (dataLen >= 57 + transactionIdLength) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22));
+                            const pan = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 38));
+                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 38, dataStart + transactionIdLength + 46));
+                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 46, dataStart + transactionIdLength + 54));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 54, dataStart + transactionIdLength + 57));
                             
-                            const txDataLen = dataLen - 77;
-                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + 77, dataStart + 77 + txDataLen)) : '';
+                            const txDataLen = dataLen - (57 + transactionIdLength);
+                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen)) : '';
 
                             addLog(`<strong>📜 Last Transaction Retrieved:</strong>`, 'receive');
                             addLog(`  Transaction ID: ${transactionId}`, 'receive');
@@ -962,12 +994,12 @@
                         break;
 
                     case 0x07: // QRIS MPM Transaction
-                        if (dataLen >= 65) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 31));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 31, dataStart + 45));
-                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + 45, dataStart + 65));
+                        if (dataLen >= 45 + transactionIdLength) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 11));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 11, dataStart + transactionIdLength + 25));
+                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45));
                             
                             addLog(`<strong>📱 QRIS MPM Payment Success:</strong>`, 'receive');
                             addLog(`  Transaction ID: ${transactionId}`, 'receive');
@@ -979,13 +1011,13 @@
                         break;
 
                     case 0x08: // Request QRIS MPM
-                        if (dataLen >= 42) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 42));
+                        if (dataLen >= 22 + transactionIdLength) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22));
                             
-                            const qrisDataLen = dataLen - 42;
-                            const qrisData = qrisDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + 42, dataStart + 42 + qrisDataLen)) : '';
+                            const qrisDataLen = dataLen - (22 + transactionIdLength);
+                            const qrisData = qrisDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 22 + qrisDataLen)) : '';
                             
                             addLog(`<strong>📱 QRIS MPM Generated:</strong>`, 'receive');
                             addLog(`  Transaction ID: ${transactionId}`, 'receive');
@@ -1000,12 +1032,12 @@
                         break;
 
                     case 0x09: // Check Payment Status MPM
-                        if (dataLen >= 65) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + 20));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + 20, dataStart + 28));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + 28, dataStart + 31));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + 31, dataStart + 45));
-                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + 45, dataStart + 65));
+                        if (dataLen >= 45 + transactionIdLength) {
+                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
+                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 11));
+                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 11, dataStart + transactionIdLength + 25));
+                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45));
                             
                             addLog(`<strong>✅ QRIS Payment Confirmed:</strong>`, 'receive');
                             addLog(`  Transaction ID: ${transactionId}`, 'receive');
