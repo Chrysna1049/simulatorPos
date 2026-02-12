@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aino Payment Device Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -261,6 +262,232 @@
             gap: 10px;
             margin-bottom: 10px;
         }
+
+        /* QR Code Modal Styles */
+        .qr-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .qr-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .qr-modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .qr-modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #667eea;
+        }
+
+        #qrCanvas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
+        #qrCanvas canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .countdown-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .countdown-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .countdown-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .countdown-bar-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        .qr-transaction-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .qr-transaction-info div {
+            margin-bottom: 8px;
+        }
+
+        .qr-transaction-info strong {
+            color: #667eea;
+        }
+
+        .qr-button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-close-qr {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-close-qr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-check-payment {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-check-payment:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .countdown-warning {
+            color: #f45c43;
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* Success Notification */
+        .qr-success-message {
+            display: none;
+            text-align: center;
+        }
+
+        .qr-success-message.show {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-title {
+            font-size: 24px;
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .success-details {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            color: #155724;
+            font-size: 13px;
+        }
+
+        .success-details div {
+            margin-bottom: 8px;
+        }
+
+        .success-details strong {
+            color: #155724;
+        }
+
+        .auto-close-message {
+            font-size: 12px;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .auto-close-countdown {
+            font-weight: bold;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -387,6 +614,49 @@
         </div>
     </div>
 
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="qr-modal">
+        <div class="qr-modal-content">
+            <h2>📱 Scan QRIS Payment</h2>
+            
+            <div class="qr-transaction-info">
+                <div><strong>Amount:</strong> <span id="qrAmount">-</span></div>
+                <div><strong>Transaction ID:</strong> <span id="qrTransId">-</span></div>
+                <div><strong>Time:</strong> <span id="qrTimestamp">-</span></div>
+            </div>
+
+            <div class="qr-container">
+                <div id="qrCanvas"></div>
+            </div>
+
+            <div class="countdown-label">Waiting for payment</div>
+            <div class="countdown-display" id="countdownTimer">120</div>
+            <div class="countdown-bar">
+                <div class="countdown-bar-fill" id="countdownBar"></div>
+            </div>
+
+            <!-- Success Message -->
+            <div class="qr-success-message" id="successMessage">
+                <div class="success-icon">✅</div>
+                <div class="success-title">Pembayaran Berhasil!</div>
+                <div class="success-details" id="successDetails"></div>
+                <div class="auto-close-message">
+                    Auto Close <span class="auto-close-countdown" id="autoCloseCount">3</span> detik
+                </div>
+            </div>
+
+            <!-- Countdown UI -->
+            <div id="countdownUI">
+                <div class="qr-button-group">
+                    <button class="btn-check-payment" id="checkPaymentBtn" onclick="checkPaymentStatus()">Check Status</button>
+                    <button class="btn-close-qr" id="closeQrBtn" onclick="closeQRModal()">Close</button>
+                </div>
+
+                <div class="countdown-warning" id="countdownWarning"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let port = null;
         let reader = null;
@@ -394,6 +664,15 @@
         let logCounter = 0;
         let readBuffer = [];
         let isReading = false;
+        let countdownInterval = null;
+        let autoCheckPaymentTimeout = null;
+        let autoCloseTimeout = null;
+        let autoCloseInterval = null;
+        let qrModalData = {
+            amount: '',
+            transId: '',
+            timestamp: ''
+        };
 
         // Check browser compatibility
         function checkBrowserCompatibility() {
@@ -489,17 +768,7 @@
             return timestamp.padStart(20, '0').slice(0, 20);
         }
 
-        // Generate timestamp
-        // function generateTimestamp() {
-        //     const now = new Date();
-        //     const yy = now.getFullYear().toString().slice(2);
-        //     const mm = (now.getMonth() + 1).toString().padStart(2, '0');
-        //     const dd = now.getDate().toString().padStart(2, '0');
-        //     const hh = now.getHours().toString().padStart(2, '0');
-        //     const min = now.getMinutes().toString().padStart(2, '0');
-        //     const ss = now.getSeconds().toString().padStart(2, '0');
-        //     return yy + mm + dd + hh + min + ss;
-        // }
+        // Generate timestamp in DDMMYYYYHHmmss format
         function generateTimestamp() {
             const now = new Date();
             const dd = now.getDate().toString().padStart(2, '0');
@@ -508,6 +777,47 @@
             const hh = now.getHours().toString().padStart(2, '0');
             const min = now.getMinutes().toString().padStart(2, '0');
             const ss = now.getSeconds().toString().padStart(2, '0');
+
+            return dd + mm + yyyy + hh + min + ss;
+        }
+
+        // Get default datetime-local format (YYYY-MM-DDTHH:mm)
+        function getDefaultDatetimeLocal() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+            const dd = now.getDate().toString().padStart(2, '0');
+            const hh = now.getHours().toString().padStart(2, '0');
+            const min = now.getMinutes().toString().padStart(2, '0');
+
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        }
+
+        // Convert datetime-local value to DDMMYYYYHHmmss format
+        function convertDatetimeToTimestampFormat(datetimeValue) {
+            if (!datetimeValue) {
+                return generateTimestamp();
+            }
+
+            // datetimeValue format: YYYY-MM-DDTHH:mm
+            const parts = datetimeValue.split('T');
+            if (parts.length !== 2) {
+                return generateTimestamp();
+            }
+
+            const dateParts = parts[0].split('-');
+            const timeParts = parts[1].split(':');
+
+            if (dateParts.length !== 3 || timeParts.length < 2) {
+                return generateTimestamp();
+            }
+
+            const yyyy = dateParts[0];
+            const mm = dateParts[1];
+            const dd = dateParts[2];
+            const hh = timeParts[0];
+            const min = timeParts[1];
+            const ss = '00'; // Default seconds to 00
 
             return dd + mm + yyyy + hh + min + ss;
         }
@@ -533,7 +843,7 @@
                     </div>
                     <div class="form-group">
                         <label>Timestamp (DDMMYYYYHHmmss)</label>
-                        <input type="text" id="timestamp" value="${generateTimestamp()}" maxlength="14">
+                        <input type="datetime-local" id="timestamp" value="${getDefaultDatetimeLocal()}">
                     </div>
                 `;
             } else if (cmd === '0x09') {
@@ -587,7 +897,8 @@
             if (cmd === 0x01 || cmd === 0x07 || cmd === 0x08) {
                 const transId = document.getElementById('transactionId').value.padEnd(transIdLength, '0').substring(0, transIdLength);
                 const amount = parseInt(document.getElementById('amount').value).toString().padStart(8, '0');
-                const timestamp = document.getElementById('timestamp').value.padEnd(14, '0');
+                const datetimeValue = document.getElementById('timestamp').value;
+                const timestamp = convertDatetimeToTimestampFormat(datetimeValue).padEnd(14, '0');
                 
                 variableData.push(...stringToHex(transId));
                 variableData.push(...stringToHex(amount));
@@ -631,6 +942,43 @@
 
             logArea.innerHTML += logEntry;
             logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Log formatted key-value data
+        function addLogFormatted(data, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logCounter++;
+
+            // Find max key length for alignment
+            let maxKeyLength = 0;
+            for (let key in data) {
+                if (key.length > maxKeyLength) maxKeyLength = key.length;
+            }
+
+            // Build formatted output
+            let formattedData = '';
+            for (let key in data) {
+                const paddedKey = key.padEnd(maxKeyLength);
+                formattedData += `${paddedKey} : ${data[key]}\n`;
+            }
+
+            let logEntry = `
+                <div class="log-entry ${type}">
+                    <strong>[${logCounter}] ${timestamp} - ${type.toUpperCase()}</strong><br>
+                    <pre style="margin: 0; font-family: 'Courier New', monospace; font-size: 12px; color: inherit;">${escapeHtml(formattedData)}</pre>
+                </div>
+            `;
+
+            logArea.innerHTML += logEntry;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Escape HTML special characters
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // Clear log
@@ -887,8 +1235,10 @@
                         const issuer = String.fromCharCode(...packet.slice(dataStart + csnLen, dataStart + csnLen + 3));
                         
                         addLog(`<strong>🔖 Card Serial Number:</strong>`, 'receive');
-                        addLog(`  CSN: ${csn} (${csnLen} bytes)`, 'receive');
-                        addLog(`  Issuer: ${issuer}`, 'receive');
+                        addLogFormatted({
+                            'CSN': `${csn} (${csnLen} bytes)`,
+                            'Issuer': issuer
+                        }, 'receive');
                     } else {
                         addLog(`⚠ Insufficient data for CSN response (expected min 4 bytes, got ${dataLen})`, 'warning');
                     }
@@ -920,16 +1270,18 @@
                             const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen)) : '';
 
                             addLog(`<strong>📊 Transaction Details:</strong>`, 'receive');
-                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
-                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
-                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
-                            addLog(`  PAN: ${pan}`, 'receive');
-                            addLog(`  Balance Before: Rp ${parseInt(balanceBefore).toLocaleString()}`, 'receive');
-                            addLog(`  Balance After: Rp ${parseInt(balanceAfter).toLocaleString()}`, 'receive');
-                            addLog(`  Deducted: Rp ${(parseInt(balanceBefore) - parseInt(balanceAfter)).toLocaleString()}`, 'receive');
-                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            addLogFormatted({
+                                'ID Trans': transactionId,
+                                'Amount': amount,
+                                'Date': timestamp,
+                                'PAN': pan,
+                                'Saldo Awal': balanceBefore,
+                                'Saldo Akhir': balanceAfter,
+                                'Bank': issuer
+                            }, 'receive');
+                            
                             if (txData) {
-                                addLog(`  Transaction Data Length: ${txDataLen} bytes`, 'info');
+                                addLog(`Transaction Data Length: ${txDataLen} bytes`, 'info');
                             }
                         }
                         break;
@@ -939,9 +1291,11 @@
                             const appVer = String.fromCharCode(...packet.slice(dataStart, dataStart + 2));
                             const svnVer = String.fromCharCode(...packet.slice(dataStart + 2, dataStart + 5));
                             addLog(`<strong>🔌 Device Information:</strong>`, 'receive');
-                            addLog(`  Application Version: ${appVer}`, 'receive');
-                            addLog(`  SVN Build: ${svnVer}`, 'receive');
-                            addLog(`  ✓ Device is ready and responding`, 'receive');
+                            addLogFormatted({
+                                'App Version': appVer,
+                                'SVN Build': svnVer,
+                                'Status': '✓ Device is ready'
+                            }, 'receive');
                         }
                         break;
 
@@ -959,15 +1313,18 @@
                             const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen)) : '';
 
                             addLog(`<strong>📜 Last Transaction Retrieved:</strong>`, 'receive');
-                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
-                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
-                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
-                            addLog(`  PAN: ${pan}`, 'receive');
-                            addLog(`  Balance Before: Rp ${parseInt(balanceBefore).toLocaleString()}`, 'receive');
-                            addLog(`  Balance After: Rp ${parseInt(balanceAfter).toLocaleString()}`, 'receive');
-                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            addLogFormatted({
+                                'ID Trans': transactionId,
+                                'Amount': amount,
+                                'Date': timestamp,
+                                'PAN': pan,
+                                'Saldo Awal': balanceBefore,
+                                'Saldo Akhir': balanceAfter,
+                                'Bank': issuer
+                            }, 'receive');
+                            
                             if (txData) {
-                                addLog(`  Transaction Data: ${txDataLen} bytes encrypted data`, 'info');
+                                addLog(`Transaction Data: ${txDataLen} bytes encrypted data`, 'info');
                             }
                         }
                         break;
@@ -979,9 +1336,11 @@
                             const issuer = String.fromCharCode(...packet.slice(dataStart + 24, dataStart + 27));
                             
                             addLog(`<strong>💳 Card Balance Information:</strong>`, 'receive');
-                            addLog(`  PAN: ${pan}`, 'receive');
-                            addLog(`  Balance: Rp ${parseInt(balance).toLocaleString()}`, 'receive');
-                            addLog(`  Issuer: ${issuer}`, 'receive');
+                            addLogFormatted({
+                                'PAN': pan,
+                                'Balance': `Rp ${parseInt(balance).toLocaleString()}`,
+                                'Issuer': issuer
+                            }, 'receive');
                         }
                         break;
 
@@ -1002,11 +1361,13 @@
                             const pgRefNum = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45));
                             
                             addLog(`<strong>📱 QRIS MPM Payment Success:</strong>`, 'receive');
-                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
-                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
-                            addLog(`  Issuer: ${issuer}`, 'receive');
-                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
-                            addLog(`  PG Reference: ${pgRefNum}`, 'receive');
+                            addLogFormatted({
+                                'ID Trans': transactionId,
+                                'Amount': `Rp ${parseInt(amount).toLocaleString()}`,
+                                'Bank': issuer,
+                                'Timestamp': timestamp,
+                                'PG Reference': pgRefNum
+                            }, 'receive');
                         }
                         break;
 
@@ -1020,13 +1381,19 @@
                             const qrisData = qrisDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 22 + qrisDataLen)) : '';
                             
                             addLog(`<strong>📱 QRIS MPM Generated:</strong>`, 'receive');
-                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
-                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
-                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
+                            addLogFormatted({
+                                'ID Trans': transactionId,
+                                'Amount': `Rp ${parseInt(amount).toLocaleString()}`,
+                                'Timestamp': timestamp,
+                                'QRIS Length': `${qrisDataLen} chars`
+                            }, 'receive');
+                            
                             if (qrisData) {
-                                addLog(`  <strong>QRIS Data (${qrisDataLen} chars):</strong>`, 'receive');
-                                addLog(`  ${qrisData.substring(0, 100)}${qrisData.length > 100 ? '...' : ''}`, 'info');
-                                addLog(`  ✓ Use this data to generate QR code on POS`, 'receive');
+                                addLog(`QRIS Data: ${qrisData.substring(0, 100)}${qrisData.length > 100 ? '...' : ''}`, 'info');
+                                addLog(`✓ Displaying QR code with 120-second countdown`, 'receive');
+                                
+                                // Show QR code modal with countdown
+                                showQRModal(qrisData, amount, transactionId, timestamp);
                             }
                         }
                         break;
@@ -1040,11 +1407,22 @@
                             const pgRefNum = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45));
                             
                             addLog(`<strong>✅ QRIS Payment Confirmed:</strong>`, 'receive');
-                            addLog(`  Transaction ID: ${transactionId}`, 'receive');
-                            addLog(`  Amount: Rp ${parseInt(amount).toLocaleString()}`, 'receive');
-                            addLog(`  Issuer: ${issuer}`, 'receive');
-                            addLog(`  Timestamp: ${formatTimestamp(timestamp)}`, 'receive');
-                            addLog(`  PG Reference: ${pgRefNum}`, 'receive');
+                            addLogFormatted({
+                                'ID Trans': transactionId,
+                                'Amount': `Rp ${parseInt(amount).toLocaleString()}`,
+                                'Bank': issuer,
+                                'Timestamp': timestamp,
+                                'PG Reference': pgRefNum
+                            }, 'receive');
+                            
+                            // Show success notification in modal
+                            showPaymentSuccess({
+                                transactionId: transactionId,
+                                amount: amount,
+                                issuer: issuer,
+                                timestamp: timestamp,
+                                pgRefNum: pgRefNum
+                            });
                         }
                         break;
                 }
@@ -1190,10 +1568,10 @@
             }
 
             try {
-                // Update timestamp field with current time
+                // Update datetime-local field with current time
                 const timestampField = document.getElementById('timestamp');
                 if (timestampField) {
-                    timestampField.value = generateTimestamp();
+                    timestampField.value = getDefaultDatetimeLocal();
                 }
                 
                 const packet = buildCommandPacket();
@@ -1234,6 +1612,212 @@
                 await disconnectSerial();
             }
         });
+
+        // Show QR Code Modal with countdown
+        function showQRModal(qrisData, amount, transactionId, timestamp) {
+            qrModalData = {
+                amount: amount,
+                transId: transactionId,
+                timestamp: timestamp
+            };
+
+            // Update modal info
+            document.getElementById('qrAmount').textContent = `Rp ${parseInt(amount).toLocaleString()}`;
+            document.getElementById('qrTransId').textContent = transactionId;
+            document.getElementById('qrTimestamp').textContent = timestamp;
+
+            // Clear previous QR code
+            const qrContainer = document.getElementById('qrCanvas');
+            qrContainer.innerHTML = '';
+
+            // Generate QR Code
+            try {
+                new QRCode(qrContainer, {
+                    text: qrisData,
+                    width: 300,
+                    height: 300,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                addLog('✓ QR Code generated successfully', 'receive');
+            } catch (error) {
+                addLog(`Error generating QR code: ${error.message}`, 'error');
+                console.error('QR Code error:', error);
+                return;
+            }
+
+            // Show modal
+            const modal = document.getElementById('qrModal');
+            modal.classList.add('active');
+
+            // Start countdown
+            startQRCountdown();
+        }
+
+        // Start countdown timer
+        function startQRCountdown() {
+            let remainingSeconds = 120;
+            const maxSeconds = 120;
+
+            // Clear existing intervals
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoCheckPaymentTimeout) clearTimeout(autoCheckPaymentTimeout);
+
+            // Update display immediately
+            updateCountdownDisplay(remainingSeconds, maxSeconds);
+
+            // Update countdown every second
+            countdownInterval = setInterval(() => {
+                remainingSeconds--;
+                updateCountdownDisplay(remainingSeconds, maxSeconds);
+
+                if (remainingSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    handleCountdownComplete();
+                }
+            }, 1000);
+
+            // Schedule auto check payment at countdown end
+            autoCheckPaymentTimeout = setTimeout(() => {
+                handleCountdownComplete();
+            }, 120000);
+        }
+
+        // Update countdown display
+        function updateCountdownDisplay(seconds, maxSeconds) {
+            const timerElement = document.getElementById('countdownTimer');
+            const barElement = document.getElementById('countdownBar');
+            const warningElement = document.getElementById('countdownWarning');
+
+            // Update timer display
+            timerElement.textContent = seconds;
+
+            // Update progress bar
+            const percentageRemaining = (seconds / maxSeconds) * 100;
+            barElement.style.width = percentageRemaining + '%';
+
+            // Change color based on remaining time
+            if (seconds <= 30) {
+                timerElement.style.color = '#f45c43';
+                warningElement.textContent = '⚠️ Payment timeout in ' + seconds + ' seconds';
+            } else if (seconds <= 60) {
+                timerElement.style.color = '#ffc107';
+                warningElement.textContent = '';
+            } else {
+                timerElement.style.color = '#667eea';
+                warningElement.textContent = '';
+            }
+        }
+
+        // Handle countdown completion
+        function handleCountdownComplete() {
+            clearInterval(countdownInterval);
+            clearTimeout(autoCheckPaymentTimeout);
+
+            addLog('Countdown completed. Sending Check Payment Status command...', 'info');
+            checkPaymentStatus();
+        }
+
+        // Check payment status (Command 0x09)
+        async function checkPaymentStatus() {
+            if (!writer) {
+                addLog('Not connected to device', 'error');
+                return;
+            }
+
+            try {
+                // Set command to 0x09
+                document.getElementById('commandSelect').value = '0x09';
+                updateCommandFields();
+
+                // Set transaction ID from QR modal data
+                const transIdInput = document.getElementById('transactionId');
+                if (transIdInput && qrModalData.transId) {
+                    transIdInput.value = qrModalData.transId;
+                }
+
+                // Send the command
+                await sendCommand();
+
+            } catch (error) {
+                addLog(`Error checking payment status: ${error.message}`, 'error');
+            }
+        }
+
+        // Show payment success notification
+        function showPaymentSuccess(paymentData) {
+            // Clear existing timers
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoCheckPaymentTimeout) clearTimeout(autoCheckPaymentTimeout);
+            if (autoCloseInterval) clearInterval(autoCloseInterval);
+            if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
+
+            // Hide countdown UI
+            const countdownUI = document.getElementById('countdownUI');
+            countdownUI.style.display = 'none';
+
+            // Build success details HTML
+            const successDetailsHTML = `
+                <div><strong>ID Transaksi:</strong> ${paymentData.transactionId}</div>
+                <div><strong>Jumlah:</strong> Rp ${parseInt(paymentData.amount).toLocaleString()}</div>
+                <div><strong>Bank:</strong> ${paymentData.issuer}</div>
+                <div><strong>Waktu:</strong> ${paymentData.timestamp}</div>
+                <div><strong>Reference:</strong> ${paymentData.pgRefNum}</div>
+            `;
+
+            // Update and show success message
+            document.getElementById('successDetails').innerHTML = successDetailsHTML;
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.add('show');
+
+            // Auto-close countdown
+            let closeCountdown = 3;
+            document.getElementById('autoCloseCount').textContent = closeCountdown;
+
+            autoCloseInterval = setInterval(() => {
+                closeCountdown--;
+                document.getElementById('autoCloseCount').textContent = closeCountdown;
+
+                if (closeCountdown <= 0) {
+                    clearInterval(autoCloseInterval);
+                    closeQRModal();
+                }
+            }, 1000);
+
+            // Backup timeout to ensure modal closes
+            autoCloseTimeout = setTimeout(() => {
+                closeQRModal();
+            }, 3000);
+        }
+
+        // Close QR Modal
+        function closeQRModal() {
+            // Clear all intervals and timeouts
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoCheckPaymentTimeout) clearTimeout(autoCheckPaymentTimeout);
+            if (autoCloseInterval) clearInterval(autoCloseInterval);
+            if (autoCloseTimeout) clearTimeout(autoCloseTimeout);
+
+            // Hide modal
+            const modal = document.getElementById('qrModal');
+            modal.classList.remove('active');
+
+            // Reset modal UI
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.remove('show');
+            const countdownUI = document.getElementById('countdownUI');
+            countdownUI.style.display = 'block';
+
+            // Reset modal data
+            qrModalData = {
+                amount: '',
+                transId: '',
+                timestamp: ''
+            };
+
+            addLog('QR Code modal closed', 'warning');
+        }
     </script>
 </body>
 </html>
