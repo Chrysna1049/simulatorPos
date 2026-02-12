@@ -1191,7 +1191,7 @@
 
                     // Verify checksum
                     const receivedChecksum = packet[packet.length - 3];
-                    const checksumData = packet.slice(2, packet.length - 3);
+                    const checksumData = packet.slice(4, packet.length - 3);
                     const calculatedChecksum = calculateLRC(checksumData);
                     
                     if (receivedChecksum === calculatedChecksum) {
