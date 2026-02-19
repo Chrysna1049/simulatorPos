@@ -1203,7 +1203,7 @@
                     // Parse specific responses based on command
                     if (resp === 0x00 && packet.length >= minLength + dataLen) {
                         const transIdLength = parseInt(document.getElementById('transactionIdLength').value);
-                        parseSuccessResponse(cmd, packet, dataLen, dataLengthStart + 2, transIdLength);
+                        parseSuccessResponse(cmd, packet, dataLen, dataLengthStart + 2, posIdLength, shiftIdLength, transIdLength);
                     } else if (resp !== 0x00) {
                         parseErrorResponse(cmd, resp);
                     }
@@ -1251,25 +1251,46 @@
         }
 
         // Parse success response data
-        function parseSuccessResponse(cmd, packet, dataLen, dataStartPos = 19, transactionIdLength = 20) {
+        function parseSuccessResponse(cmd, packet, dataLen, dataStartPos = 19, posIdLength = 5, shiftIdLength = 8, transactionIdLength = 20) {
             try {
                 const dataStart = dataStartPos;
                 
+                // Helper function to safely extract data
+                const safeSlice = (start, end, label = '') => {
+                    if (end > packet.length) {
+                        addLog(`⚠ Warning: ${label} exceeds packet boundary (${start}-${end}, packet length: ${packet.length})`, 'warning');
+                        return packet.slice(start, packet.length);
+                    }
+                    return packet.slice(start, end);
+                };
+                
+                // Helper to convert bytes safely
+                const bytesToString = (bytes, label = '') => {
+                    try {
+                        return String.fromCharCode(...bytes);
+                    } catch (e) {
+                        addLog(`⚠ Error converting ${label}: ${e.message}`, 'warning');
+                        return '[Error]';
+                    }
+                };
+                
                 switch(cmd) {
                     case 0x01: // New Debit Transaction
+                        addLog(`<strong>📊 Parsing Transaction Details:</strong>`, 'receive');
+                        addLog(`Data position: ${dataStart}, Length: ${dataLen} bytes | TransID length: ${transactionIdLength}`, 'info');
+                        
                         if (dataLen >= 57 + transactionIdLength) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22));
-                            const pan = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 38));
-                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 38, dataStart + transactionIdLength + 46));
-                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 46, dataStart + transactionIdLength + 54));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 54, dataStart + transactionIdLength + 57));
+                            const transactionId = bytesToString(safeSlice(dataStart, dataStart + transactionIdLength, 'TransID'), 'TransID');
+                            const amount = bytesToString(safeSlice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8, 'Amount'), 'Amount');
+                            const timestamp = bytesToString(safeSlice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22, 'Timestamp'), 'Timestamp');
+                            const pan = bytesToString(safeSlice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 38, 'PAN'), 'PAN');
+                            const balanceBefore = bytesToString(safeSlice(dataStart + transactionIdLength + 38, dataStart + transactionIdLength + 46, 'BalanceBefore'), 'BalanceBefore');
+                            const balanceAfter = bytesToString(safeSlice(dataStart + transactionIdLength + 46, dataStart + transactionIdLength + 54, 'BalanceAfter'), 'BalanceAfter');
+                            const issuer = bytesToString(safeSlice(dataStart + transactionIdLength + 54, dataStart + transactionIdLength + 57, 'Issuer'), 'Issuer');
                             
                             const txDataLen = dataLen - (57 + transactionIdLength);
-                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen)) : '';
+                            const txData = txDataLen > 0 ? bytesToString(safeSlice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen, 'TxData'), 'TxData') : '';
 
-                            addLog(`<strong>📊 Transaction Details:</strong>`, 'receive');
                             addLogFormatted({
                                 'ID Trans': transactionId,
                                 'Amount': amount,
@@ -1283,6 +1304,8 @@
                             if (txData) {
                                 addLog(`Transaction Data Length: ${txDataLen} bytes`, 'info');
                             }
+                        } else {
+                            addLog(`⚠ Insufficient data for command 0x01 (expected min ${57 + transactionIdLength} bytes, got ${dataLen})`, 'warning');
                         }
                         break;
 
@@ -1300,19 +1323,21 @@
                         break;
 
                     case 0x03: // Get Last Transaction
+                        addLog(`<strong>📜 Parsing Last Transaction:</strong>`, 'receive');
+                        addLog(`Data position: ${dataStart}, Length: ${dataLen} bytes | TransID length: ${transactionIdLength}`, 'info');
+                        
                         if (dataLen >= 57 + transactionIdLength) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22));
-                            const pan = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 38));
-                            const balanceBefore = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 38, dataStart + transactionIdLength + 46));
-                            const balanceAfter = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 46, dataStart + transactionIdLength + 54));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 54, dataStart + transactionIdLength + 57));
+                            const transactionId = bytesToString(safeSlice(dataStart, dataStart + transactionIdLength, 'TransID'), 'TransID');
+                            const amount = bytesToString(safeSlice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8, 'Amount'), 'Amount');
+                            const timestamp = bytesToString(safeSlice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22, 'Timestamp'), 'Timestamp');
+                            const pan = bytesToString(safeSlice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 38, 'PAN'), 'PAN');
+                            const balanceBefore = bytesToString(safeSlice(dataStart + transactionIdLength + 38, dataStart + transactionIdLength + 46, 'BalanceBefore'), 'BalanceBefore');
+                            const balanceAfter = bytesToString(safeSlice(dataStart + transactionIdLength + 46, dataStart + transactionIdLength + 54, 'BalanceAfter'), 'BalanceAfter');
+                            const issuer = bytesToString(safeSlice(dataStart + transactionIdLength + 54, dataStart + transactionIdLength + 57, 'Issuer'), 'Issuer');
                             
                             const txDataLen = dataLen - (57 + transactionIdLength);
-                            const txData = txDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen)) : '';
+                            const txData = txDataLen > 0 ? bytesToString(safeSlice(dataStart + transactionIdLength + 57, dataStart + transactionIdLength + 57 + txDataLen, 'TxData'), 'TxData') : '';
 
-                            addLog(`<strong>📜 Last Transaction Retrieved:</strong>`, 'receive');
                             addLogFormatted({
                                 'ID Trans': transactionId,
                                 'Amount': amount,
@@ -1326,14 +1351,17 @@
                             if (txData) {
                                 addLog(`Transaction Data: ${txDataLen} bytes encrypted data`, 'info');
                             }
+                        } else {
+                            addLog(`⚠ Insufficient data for command 0x03 (expected min ${57 + transactionIdLength} bytes, got ${dataLen})`, 'warning');
                         }
                         break;
 
                     case 0x04: // Check Balance
                         if (dataLen >= 27) {
                             const pan = String.fromCharCode(...packet.slice(dataStart, dataStart + 16));
-                            const balance = String.fromCharCode(...packet.slice(dataStart + 16, dataStart + 24));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + 24, dataStart + 27));
+                            const issuer = String.fromCharCode(...packet.slice(dataStart + 16, dataStart + 19));
+                            const balance = String.fromCharCode(...packet.slice(dataStart + 19, dataStart + 27));
+                            
                             
                             addLog(`<strong>💳 Card Balance Information:</strong>`, 'receive');
                             addLogFormatted({
@@ -1353,14 +1381,16 @@
                         break;
 
                     case 0x07: // QRIS MPM Transaction
+                        addLog(`<strong>📱 Parsing QRIS MPM Transaction:</strong>`, 'receive');
+                        addLog(`Data position: ${dataStart}, Length: ${dataLen} bytes | TransID length: ${transactionIdLength}`, 'info');
+                        
                         if (dataLen >= 45 + transactionIdLength) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 11));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 11, dataStart + transactionIdLength + 25));
-                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45));
+                            const transactionId = bytesToString(safeSlice(dataStart, dataStart + transactionIdLength, 'TransID'), 'TransID');
+                            const amount = bytesToString(safeSlice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8, 'Amount'), 'Amount');
+                            const issuer = bytesToString(safeSlice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 11, 'Issuer'), 'Issuer');
+                            const timestamp = bytesToString(safeSlice(dataStart + transactionIdLength + 11, dataStart + transactionIdLength + 25, 'Timestamp'), 'Timestamp');
+                            const pgRefNum = bytesToString(safeSlice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45, 'PGRefNum'), 'PGRefNum');
                             
-                            addLog(`<strong>📱 QRIS MPM Payment Success:</strong>`, 'receive');
                             addLogFormatted({
                                 'ID Trans': transactionId,
                                 'Amount': `Rp ${parseInt(amount).toLocaleString()}`,
@@ -1368,19 +1398,23 @@
                                 'Timestamp': timestamp,
                                 'PG Reference': pgRefNum
                             }, 'receive');
+                        } else {
+                            addLog(`⚠ Insufficient data for command 0x07 (expected min ${45 + transactionIdLength} bytes, got ${dataLen})`, 'warning');
                         }
                         break;
 
                     case 0x08: // Request QRIS MPM
+                        addLog(`<strong>📱 Parsing QRIS MPM Request:</strong>`, 'receive');
+                        addLog(`Data position: ${dataStart}, Length: ${dataLen} bytes | TransID length: ${transactionIdLength}`, 'info');
+                        
                         if (dataLen >= 22 + transactionIdLength) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22));
+                            const transactionId = bytesToString(safeSlice(dataStart, dataStart + transactionIdLength, 'TransID'), 'TransID');
+                            const amount = bytesToString(safeSlice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8, 'Amount'), 'Amount');
+                            const timestamp = bytesToString(safeSlice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 22, 'Timestamp'), 'Timestamp');
                             
                             const qrisDataLen = dataLen - (22 + transactionIdLength);
-                            const qrisData = qrisDataLen > 0 ? String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 22 + qrisDataLen)) : '';
+                            const qrisData = qrisDataLen > 0 ? bytesToString(safeSlice(dataStart + transactionIdLength + 22, dataStart + transactionIdLength + 22 + qrisDataLen, 'QRISData'), 'QRISData') : '';
                             
-                            addLog(`<strong>📱 QRIS MPM Generated:</strong>`, 'receive');
                             addLogFormatted({
                                 'ID Trans': transactionId,
                                 'Amount': `Rp ${parseInt(amount).toLocaleString()}`,
@@ -1395,18 +1429,22 @@
                                 // Show QR code modal with countdown
                                 showQRModal(qrisData, amount, transactionId, timestamp);
                             }
+                        } else {
+                            addLog(`⚠ Insufficient data for command 0x08 (expected min ${22 + transactionIdLength} bytes, got ${dataLen})`, 'warning');
                         }
                         break;
 
                     case 0x09: // Check Payment Status MPM
+                        addLog(`<strong>✅ Parsing Payment Status:</strong>`, 'receive');
+                        addLog(`Data position: ${dataStart}, Length: ${dataLen} bytes | TransID length: ${transactionIdLength}`, 'info');
+                        
                         if (dataLen >= 45 + transactionIdLength) {
-                            const transactionId = String.fromCharCode(...packet.slice(dataStart, dataStart + transactionIdLength));
-                            const amount = String.fromCharCode(...packet.slice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8));
-                            const issuer = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 11));
-                            const timestamp = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 11, dataStart + transactionIdLength + 25));
-                            const pgRefNum = String.fromCharCode(...packet.slice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45));
+                            const transactionId = bytesToString(safeSlice(dataStart, dataStart + transactionIdLength, 'TransID'), 'TransID');
+                            const amount = bytesToString(safeSlice(dataStart + transactionIdLength, dataStart + transactionIdLength + 8, 'Amount'), 'Amount');
+                            const issuer = bytesToString(safeSlice(dataStart + transactionIdLength + 8, dataStart + transactionIdLength + 11, 'Issuer'), 'Issuer');
+                            const timestamp = bytesToString(safeSlice(dataStart + transactionIdLength + 11, dataStart + transactionIdLength + 25, 'Timestamp'), 'Timestamp');
+                            const pgRefNum = bytesToString(safeSlice(dataStart + transactionIdLength + 25, dataStart + transactionIdLength + 45, 'PGRefNum'), 'PGRefNum');
                             
-                            addLog(`<strong>✅ QRIS Payment Confirmed:</strong>`, 'receive');
                             addLogFormatted({
                                 'ID Trans': transactionId,
                                 'Amount': `Rp ${parseInt(amount).toLocaleString()}`,
@@ -1423,6 +1461,8 @@
                                 timestamp: timestamp,
                                 pgRefNum: pgRefNum
                             });
+                        } else {
+                            addLog(`⚠ Insufficient data for command 0x09 (expected min ${45 + transactionIdLength} bytes, got ${dataLen})`, 'warning');
                         }
                         break;
                 }
