@@ -1011,6 +1011,8 @@
                     flowControl: 'none'
                 });
 
+                await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+
                 addLog('Serial port opened successfully!', 'receive');
                 addLog(`Configuration: 115200-8N1`, 'info');
 
